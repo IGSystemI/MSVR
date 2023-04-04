@@ -1,0 +1,9 @@
+.slider{
+    padding: 10px;
+}
+input[type=range] {
+    cursor: ew-resize;
+}
+canvas{
+    margin: 30px;
+}
