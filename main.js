@@ -6,6 +6,7 @@ let shProgram;                  // A shader program
 let spaceball;                  // A SimpleRotator object that lets the user rotate the view by mouse.
 let li = 30;
 let tex, video, track, triangles;
+let top1, bottom, left, right, near, far;
 
 function deg2rad(angle) {
     return angle * Math.PI / 180;
@@ -95,55 +96,25 @@ function ShaderProgram(name, program) {
  * (Note that the use of the above drawPrimitive function is not an efficient
  * way to draw with WebGL.  Here, the geometry is so simple that it doesn't matter.)
  */
+let conv, // convergence
+    eyes, // eye separation
+    ratio, // aspect ratio
+    fov; // field of view
+let a1, b, c;
 function draw() {
-    let D = document;
-    let spans = D.getElementsByClassName("slider-value");
-
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    /* Set the values of the projection transformation */
     let projection = m4.perspective(Math.PI / 32, 1, 8, 12);
-    // let projection = m4.orthographic(-10, 10, -10, 10, -10, 10);
-    let conv, // convergence
-        eyes, // eye separation
-        ratio, // aspect ratio
-        fov; // field of view
-    conv = 2000.0;
-    conv = D.getElementById("conv").value;
-    spans[3].innerHTML = conv;
-    eyes = 70.0;
-    eyes = D.getElementById("eyes").value;
-    spans[0].innerHTML = eyes;
-    ratio = 1.0;
-    fov = Math.PI / 4;
-    fov = D.getElementById("fov").value;
-    spans[1].innerHTML = fov;
-    let top, bottom, left, right, near, far;
-    near = 5.0;
-    near = D.getElementById("near").value - 0.0;
-    spans[2].innerHTML = near;
-    far = 2000.0;
+    
+    calcCamParameters();
 
-    top = near * Math.tan(fov / 2.0);
-    bottom = -top;
+    applyLeftFrustrum();
 
-    let a = ratio * Math.tan(fov / 2.0) * conv;
+    let projectionLeft = m4.frustum(left, right, bottom, top1, near, far);
 
-    let b = a - eyes / 2;
-    let c = a + eyes / 2;
+    applyRightFrustrum();
 
-    left = -b * near / conv;
-    right = c * near / conv;
-
-    // console.log(left, right, bottom, top, near, far);
-
-    let projectionLeft = m4.orthographic(left, right, bottom, top, near, far);
-
-    left = -c * near / conv;
-    right = b * near / conv;
-
-    let projectionRight = m4.orthographic(left, right, bottom, top, near, far);
+    let projectionRight = m4.frustum(left, right, bottom, top1, near, far);
     /* Get the view matrix from the SimpleRotator object.*/
     let modelView = spaceball.getViewMatrix();
 
@@ -175,12 +146,12 @@ function draw() {
     gl.uniform4fv(shProgram.iColor, [0.1, 1, 1, 1]);
     let matStill = m4.multiply(rotateToPointZero, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     let matAccumStill = m4.multiply(translateToPointZero, matStill);
-    let translateWebCam = m4.translation(-0.5, -0.5, 0);
+    let translateWebCam = m4.translation(-1, -1, 0);
     let matAccumStill1 = m4.multiply(translateWebCam, matAccumStill);
-    modelViewProjection = m4.multiply(projection, matAccumStill1);
-    // gl.uniformMatrix4fv(shProgram.iModelViewMatrix, false, matStill);
+
+    // gl.uniformMatrix4fv(shProgram.iModelmodelViewProjection = m4.multiply(projection, matAccumStill1);ViewMatrix, false, matStill);
     // gl.uniformMatrix4fv(shProgram.iProjectionMatrix, false, projection);
-    gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, modelViewProjection);
+    gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, translateWebCam);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(
         gl.TEXTURE_2D,
@@ -212,6 +183,44 @@ function draw() {
     window.requestAnimationFrame(draw)
 }
 
+function calcCamParameters() {
+    let D = document;
+    let spans = D.getElementsByClassName("slider-value");
+    conv = 2000.0;
+    conv = D.getElementById("conv").value;
+    spans[3].innerHTML = conv;
+    eyes = 70.0;
+    eyes = D.getElementById("eyes").value;
+    spans[0].innerHTML = eyes;
+    ratio = 1.0;
+    fov = Math.PI / 4;
+    fov = D.getElementById("fov").value;
+    spans[1].innerHTML = fov;
+
+    near = 5.0;
+    near = D.getElementById("near").value - 0.0;
+    spans[2].innerHTML = near;
+    far = 2000.0;
+
+    top1 = near * Math.tan(fov / 2.0);
+    bottom = -top1;
+
+    a1 = ratio * Math.tan(fov / 2.0) * conv;
+
+    b = a1 - eyes / 2;
+    c = a1 + eyes / 2;
+
+}
+
+function applyLeftFrustrum() {
+    left = -b * near / conv;
+    right = c * near / conv;
+}
+
+function applyRightFrustrum() {
+    left = -c * near / conv;
+    right = b * near / conv;
+}
 const a = 0.5;
 const p = 0.5;
 
@@ -304,8 +313,8 @@ function initGL() {
     surface.BufferData(CreateSurfaceData());
     surface.NormalBufferData(CreateSurfaceData(1));
     triangles = new Model('Triangles');
-    triangles.BufferData([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]);
-    triangles.TextureBufferData([1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1]);
+    triangles.BufferData([0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]);
+    triangles.TextureBufferData([0,1,1,1,1,0,1,0,0,0,0,1]);
     gl.enable(gl.DEPTH_TEST);
 }
 

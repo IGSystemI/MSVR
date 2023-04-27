@@ -1,9 +1,22 @@
-.slider{
+/* @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&family=Roboto&display=swap'); */
+
+body {
+    font-family: 'Comic Neue', cursive;
+    font-family: 'Roboto', sans-serif;
+    display: flex;
+    background-color: #011;
+    color: aliceblue;
+
+}
+
+.slider {
     padding: 10px;
 }
+
 input[type=range] {
     cursor: ew-resize;
 }
-canvas{
+
+canvas {
     margin: 30px;
 }
