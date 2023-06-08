@@ -225,6 +225,9 @@ function draw() {
   gl.uniformMatrix4fv(shProgram.iProjectionMatrix, false, projection);
   gl.uniform4fv(shProgram.iColor, [1.0, 1.0, 1.0, 1]);
   gl.clear(gl.DEPTH_BUFFER_BIT);
+  if(panner){
+    panner.setPosition(trans[0] * 1.0, trans[1] * 1.0, trans[2] * 1.0)
+  }
   sphereSurf.DrawTriangles()
 }
 
@@ -580,9 +583,9 @@ function audioGL() {
       panner.connect(biquadFilter);
       biquadFilter.connect(context.destination);
 
-      biquadFilter.type = 'lowshelf';
-      biquadFilter.Q.value = 0.75;
-      biquadFilter.frequency.value = 1000;
+      biquadFilter.type = 'peaking';
+      biquadFilter.Q.value = 1;
+      biquadFilter.frequency.value = 1100;
       biquadFilter.gain.value = 16;
       context.resume();
     }
